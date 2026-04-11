@@ -39,6 +39,10 @@ class ApiEndpoints {
   static const String resetPassword = '/admins/reset-password';
   static const String changePassword = '/admins/change-password';
 
+  // Admin Dashboard & Analytics
+  static const String getDashboardStats = '/admins/dashboard-stats';
+  static const String exportDashboardReport = '/admins/dashboard-stats/export';
+
   static const String updateFee = '/admins/settings/update-fee';
   static String adminEditApplicant(String id) => '/admins/applicants/$id/edit';
 }

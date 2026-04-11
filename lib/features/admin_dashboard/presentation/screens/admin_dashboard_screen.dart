@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'admin_analytics_screen.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -83,63 +84,89 @@ class _ApplicantsTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final applicantsState = ref.watch(applicantsListProvider);
 
-    return applicantsState.when(
-      loading: () => const Center(
-        child: CircularProgressIndicator(color: AppColors.kPrimaryColor),
-      ),
-      error: (err, _) => EmptyErrorWidget(
-        message: err.toString(),
-        onRetry: () => ref.refresh(applicantsListProvider),
-      ),
-      data: (applicants) {
-        if (applicants.isEmpty) {
-          return const EmptyErrorWidget(
-            message: 'No pending applicants.',
-            icon: Icons.inbox,
-          );
-        }
-        return RefreshIndicator(
-          color: AppColors.kPrimaryColor,
-          onRefresh: () async {
-            // This forces Riverpod to fetch fresh data from the Node.js backend
-            ref.invalidate(applicantsListProvider);
-            // Optional delay to ensure the UI shows the spinner briefly
-            await Future.delayed(const Duration(milliseconds: 500));
-          },
-          child: ListView.separated(
-            // AlwaysScrollable ensures Pull-to-Refresh works even if there's only 1 item
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: EdgeInsets.all(16.w),
-            itemCount: applicants.length,
-            separatorBuilder: (context, index) => SizedBox(height: 12.h),
-            itemBuilder: (context, index) {
-              final Map<String, dynamic> applicant = applicants[index];
-              return ListTile(
-                tileColor: AppColors.kSurfaceColor,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-                title: Text(
-                  applicant['fullName'] ?? 'Unknown',
-                  style: AppTextStyles.labelBold,
-                ),
-                subtitle: Text(
-                  _formatStatus(applicant['status']), // Using our new beautiful formatter
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.kPrimaryColor, // Adding a little color to the status
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                trailing: const Icon(
-                  Icons.chevron_right,
-                  color: AppColors.kPrimaryColor,
-                ),
-                onTap: () => context.push('/edit-application/${applicant['id']}'),
+    return Column(
+      children: [
+        // --- NEW: Analytics Button Header ---
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+          decoration: BoxDecoration(
+            color: AppColors.kSurfaceColor,
+            border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+          ),
+          child: CustomButton(
+            text: 'View Analytics & Reports',
+            variant: ButtonVariant.outlined, // Makes it look clean and secondary
+            onPressed: () {
+              // Navigate to the new Analytics Screen
+              // You can use standard Navigation or GoRouter depending on your setup
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AdminAnalyticsScreen()),
               );
             },
           ),
-        );
-      },
+        ),
+
+        // --- EXISTING: Applicants List ---
+        Expanded(
+          child: applicantsState.when(
+            loading: () => const Center(
+              child: CircularProgressIndicator(color: AppColors.kPrimaryColor),
+            ),
+            error: (err, _) => EmptyErrorWidget(
+              message: err.toString(),
+              onRetry: () => ref.refresh(applicantsListProvider),
+            ),
+            data: (applicants) {
+              if (applicants.isEmpty) {
+                return const EmptyErrorWidget(
+                  message: 'No pending applicants.',
+                  icon: Icons.inbox,
+                );
+              }
+              return RefreshIndicator(
+                color: AppColors.kPrimaryColor,
+                onRefresh: () async {
+                  ref.invalidate(applicantsListProvider);
+                  await Future.delayed(const Duration(milliseconds: 500));
+                },
+                child: ListView.separated(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.all(16.w),
+                  itemCount: applicants.length,
+                  separatorBuilder: (context, index) => SizedBox(height: 12.h),
+                  itemBuilder: (context, index) {
+                    final Map<String, dynamic> applicant = applicants[index];
+                    return ListTile(
+                      tileColor: AppColors.kSurfaceColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                      title: Text(
+                        applicant['fullName'] ?? 'Unknown',
+                        style: AppTextStyles.labelBold,
+                      ),
+                      subtitle: Text(
+                        _formatStatus(applicant['status']),
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.kPrimaryColor,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      trailing: const Icon(
+                        Icons.chevron_right,
+                        color: AppColors.kPrimaryColor,
+                      ),
+                      onTap: () => context.push('/edit-application/${applicant['id']}'),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

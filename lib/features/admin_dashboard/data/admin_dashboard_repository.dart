@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_endpoints.dart';
@@ -46,6 +47,43 @@ class AdminDashboardRepository {
       );
     } catch (e) {
       throw Exception('Failed to update fee.');
+    }
+  }
+
+  Future<Map<String, dynamic>> getDashboardStats({String? startDate, String? endDate}) async {
+    try {
+      final queryParams = <String, dynamic>{};
+      if (startDate != null) queryParams['startDate'] = startDate;
+      if (endDate != null) queryParams['endDate'] = endDate;
+
+      final response = await _apiClient.dio.get(
+        ApiEndpoints.getDashboardStats,
+        queryParameters: queryParams,
+      );
+
+      // Backend returns { success: true, message: ..., data: {...} }
+      // based on your admin.controller.js, actually admin.service.js returns {success, message, data}
+      return response.data['data'] ?? response.data;
+    } catch (e) {
+      throw Exception('Failed to load dashboard statistics.');
+    }
+  }
+
+  Future<List<int>> downloadReport({String? startDate, String? endDate}) async {
+    try {
+      final queryParams = <String, dynamic>{};
+      if (startDate != null) queryParams['startDate'] = startDate;
+      if (endDate != null) queryParams['endDate'] = endDate;
+
+      final response = await _apiClient.dio.get<List<int>>(
+        ApiEndpoints.exportDashboardReport,
+        queryParameters: queryParams,
+        options: Options(responseType: ResponseType.bytes), // Ensure we get the raw file bytes
+      );
+
+      return response.data ?? [];
+    } catch (e) {
+      throw Exception('Failed to download report.');
     }
   }
 }

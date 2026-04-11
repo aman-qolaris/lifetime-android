@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/admin_dashboard_repository.dart';
 
@@ -64,6 +65,45 @@ class MemberActionViewModel extends StateNotifier<AsyncValue<void>> {
       if (!mounted) return false;
       state = AsyncError(e, stack);
       return false;
+    }
+  }
+}
+
+final statsDateRangeProvider = StateProvider.autoDispose<DateTimeRange?>((ref) => null);
+
+final dashboardStatsProvider = FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
+  final repository = ref.read(adminDashboardRepositoryProvider);
+  final dateRange = ref.watch(statsDateRangeProvider);
+
+  String? startDateStr;
+  String? endDateStr;
+
+  if (dateRange != null) {
+    startDateStr = dateRange.start.toIso8601String();
+    endDateStr = dateRange.end.toIso8601String();
+  }
+
+  return repository.getDashboardStats(startDate: startDateStr, endDate: endDateStr);
+});
+
+final exportReportViewModelProvider = StateNotifierProvider<ExportReportViewModel, AsyncValue<void>>((ref) {
+  return ExportReportViewModel(ref.read(adminDashboardRepositoryProvider));
+});
+
+class ExportReportViewModel extends StateNotifier<AsyncValue<void>> {
+  final AdminDashboardRepository _repository;
+
+  ExportReportViewModel(this._repository) : super(const AsyncData(null));
+
+  Future<List<int>?> downloadReport({String? startDate, String? endDate}) async {
+    state = const AsyncLoading();
+    try {
+      final bytes = await _repository.downloadReport(startDate: startDate, endDate: endDate);
+      state = const AsyncData(null);
+      return bytes;
+    } catch (e, stack) {
+      state = AsyncError(e, stack);
+      return null;
     }
   }
 }
