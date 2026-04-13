@@ -70,8 +70,10 @@ class AdminAuthRepository {
           'newPassword': newPassword,
         },
       );
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? 'Failed to change password.');
     } catch (e) {
-      throw Exception('Failed to change password: $e');
+      throw Exception('An unexpected error occurred: $e');
     }
   }
 

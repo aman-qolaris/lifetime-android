@@ -440,6 +440,7 @@ class _SettingsTab extends ConsumerWidget {
     final newPasswordController = TextEditingController();
     final confirmPasswordController = TextEditingController(); // NEW CONTROLLER
     bool isSubmitting = false;
+    String? errorMessage;
 
     showDialog(
       context: context,
@@ -469,6 +470,31 @@ class _SettingsTab extends ConsumerWidget {
                       textAlign: TextAlign.center,
                     ),
                     SizedBox(height: 24.h),
+
+                    if (errorMessage != null) ...[
+                      Container(
+                        padding: EdgeInsets.all(12.w),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade50,
+                          borderRadius: BorderRadius.circular(8.r),
+                          border: Border.all(color: Colors.red.shade200),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.error_outline, color: Colors.red, size: 20.sp),
+                            SizedBox(width: 8.w),
+                            Expanded(
+                              child: Text(
+                                errorMessage!,
+                                style: AppTextStyles.bodyMedium.copyWith(color: Colors.red),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 16.h),
+                    ],
+
                     CustomTextField(
                       label: 'Current Password',
                       hintText: 'Enter current password',
@@ -498,6 +524,8 @@ class _SettingsTab extends ConsumerWidget {
                       text: 'Update Password',
                       isLoading: isSubmitting,
                       onPressed: () async {
+                        setState(() => errorMessage = null);
+
                         final currentPass = currentPasswordController.text.trim();
                         final newPass = newPasswordController.text.trim();
                         final confirmPass = confirmPasswordController.text.trim();
@@ -523,7 +551,11 @@ class _SettingsTab extends ConsumerWidget {
                           Navigator.pop(context); // Close dialog
                           CustomSnackBar.showSuccess(context, 'Password changed successfully!');
                         } else if (context.mounted) {
-                          CustomSnackBar.showError(context, 'Failed to change password. Please check your current password.');
+                          final error = ref.read(adminAuthViewModelProvider).error;
+                          CustomSnackBar.showError(
+                              context,
+                              error.toString().replaceAll('Exception: ', '')
+                          );
                         }
                       },
                     ),
